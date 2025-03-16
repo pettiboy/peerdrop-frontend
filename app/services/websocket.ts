@@ -4,16 +4,20 @@ export interface WebSocketCallbacks {
   onError?: (error: Event) => void;
   onClose?: (event: CloseEvent) => void;
   onSessionCode?: (code: string) => void;
+  onConnected?: () => void;
 }
 
 export class WebSocketService {
-  private baseUrl = "http://127.0.0.1:9081/ws";
+  private baseUrl = "ws://localhost:9081";
   private ws: WebSocket | null = null;
   private sessionCode: string | null = null;
   private callbacks: WebSocketCallbacks = {};
+  private isFirstMessage = true;
+  private isJoining: boolean;
 
   constructor(sessionCode: string | null = null) {
     this.sessionCode = sessionCode;
+    this.isJoining = sessionCode !== null;
   }
 
   setCallbacks(callbacks: WebSocketCallbacks) {
@@ -22,10 +26,11 @@ export class WebSocketService {
 
   connect() {
     const url = this.sessionCode
-      ? `${this.baseUrl}/chat/${this.sessionCode}`
-      : `${this.baseUrl}/chat`;
+      ? `${this.baseUrl}/ws/chat/${this.sessionCode}`
+      : `${this.baseUrl}/ws/chat`;
 
     this.ws = new WebSocket(url);
+    this.isFirstMessage = true;
 
     this.ws.onopen = () => {
       console.log("Connected to PeerDrop");
@@ -34,16 +39,24 @@ export class WebSocketService {
     this.ws.onmessage = (event) => {
       const message = event.data;
 
-      if (!this.sessionCode) {
-        // First message for new sessions contains the code
+      if (this.isFirstMessage) {
+        // First message is always the session code
         this.sessionCode = message;
-        this.callbacks.onSessionCode?.(message);
-        console.log("New session created:", this.sessionCode);
+        this.isFirstMessage = false;
+
+        if (!this.isJoining) {
+          // If we're creating a new session, notify about the code
+          this.callbacks.onSessionCode?.(message);
+        } else if (message === this.sessionCode) {
+          // If we're joining and got back the same code, we're connected
+          this.callbacks.onConnected?.();
+        }
+        console.log("Session code received:", this.sessionCode);
       } else if (message === "the other guy joined") {
         // Peer joined notification
         this.callbacks.onPeerJoined?.();
       } else {
-        // Regular message
+        // Regular message from peer
         this.callbacks.onMessage?.(message);
       }
     };
@@ -54,9 +67,8 @@ export class WebSocketService {
     };
 
     this.ws.onclose = (event) => {
-      if (event.code !== 1000) {
-        console.error("Connection lost:", event.reason);
-      }
+      // According to docs, sessions expire on disconnect
+      this.sessionCode = null;
       this.callbacks.onClose?.(event);
     };
   }

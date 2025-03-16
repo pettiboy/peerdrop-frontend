@@ -1,6 +1,6 @@
 import type { Route } from "./+types/home";
 import { useState } from "react";
-import { Chat } from "../components/Chat";
+import { useNavigate } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -13,38 +13,19 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
+  const navigate = useNavigate();
   const [sessionCode, setSessionCode] = useState("");
-  const [activeSession, setActiveSession] = useState<string | undefined>();
 
   const handleJoinSession = () => {
-    if (sessionCode.trim()) {
-      setActiveSession(sessionCode.trim());
-      setSessionCode(""); // Clear the input after joining
+    const code = sessionCode.trim();
+    if (code) {
+      navigate(`/chat/${code}`);
     }
   };
 
   const handleCreateSession = () => {
-    setActiveSession(""); // Empty string indicates we want to create a new session
+    navigate("/chat/new");
   };
-
-  if (activeSession !== undefined) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="mb-4">
-          <button
-            onClick={() => {
-              setActiveSession(undefined);
-              setSessionCode("");
-            }}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-          >
-            Leave Session
-          </button>
-        </div>
-        <Chat sessionCode={activeSession} />
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto p-4">
@@ -61,6 +42,7 @@ export default function Home() {
                 type="text"
                 value={sessionCode}
                 onChange={(e) => setSessionCode(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleJoinSession()}
                 placeholder="Enter session code"
                 className="flex-1 px-4 py-2 border rounded"
               />

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { WebSocketService } from "../services/websocket";
 
 interface ChatProps {
-  sessionCode?: string;
+  sessionCode?: string | null;
 }
 
 interface ChatMessage {
@@ -32,7 +32,7 @@ export function Chat({ sessionCode }: ChatProps) {
   }, [messages]);
 
   useEffect(() => {
-    const wsService = new WebSocketService(sessionCode);
+    const wsService = new WebSocketService(sessionCode || null);
 
     wsService.setCallbacks({
       onPeerJoined: () => {
@@ -54,6 +54,17 @@ export function Chat({ sessionCode }: ChatProps) {
           ...prev,
           {
             text: `New session created. Share this code with others: ${code}`,
+            fromSelf: false,
+            type: "system",
+          },
+        ]);
+      },
+      onConnected: () => {
+        setStatus("connected");
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: "Connected to session",
             fromSelf: false,
             type: "system",
           },
