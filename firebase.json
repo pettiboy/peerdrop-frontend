@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "site": "peer-drop",
+    "public": "build/client",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

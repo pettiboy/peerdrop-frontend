@@ -6,6 +6,7 @@
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
+    "deploy": "react-router build && firebase deploy --only hosting:peer-drop",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
