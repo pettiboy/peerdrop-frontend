@@ -1,6 +1,7 @@
 import type { Route } from "./+types/home";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import init, { greet } from "../wasm/pkg";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -26,6 +27,21 @@ export default function Home() {
   const handleCreateSession = () => {
     navigate("/chat/new");
   };
+
+  const [greeting, setGreeting] = useState<string>("");
+
+  useEffect(() => {
+    init().then(() => {
+      const message = greet("Hussain");
+      setGreeting(message);
+    });
+  }, []);
+
+  return (
+    <div className="App">
+      <h1>{greeting}</h1>
+    </div>
+  );
 
   return (
     <div className="container mx-auto p-4">
