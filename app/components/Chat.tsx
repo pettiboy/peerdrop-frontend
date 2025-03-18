@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { WebSocketService } from "../services/websocket";
+import { ImageUpload } from "./ImageUpload";
 
 interface ChatProps {
   sessionCode?: string | null;
@@ -8,7 +9,13 @@ interface ChatProps {
 interface ChatMessage {
   text: string;
   fromSelf: boolean;
-  type: "message" | "system";
+  type: "message" | "system" | "image";
+  imageUrl?: string;
+}
+
+interface WebSocketMessage {
+  type: "message" | "image";
+  data: string;
 }
 
 export function Chat({ sessionCode }: ChatProps) {
@@ -51,10 +58,37 @@ export function Chat({ sessionCode }: ChatProps) {
         setStatus("connected");
       },
       onMessage: (message) => {
-        setMessages((prev) => [
-          ...prev,
-          { text: message, fromSelf: false, type: "message" },
-        ]);
+        try {
+          // Try to parse the message as JSON first
+          const parsedMessage = JSON.parse(message) as WebSocketMessage;
+
+          if (parsedMessage.type === "image") {
+            setMessages((prev) => [
+              ...prev,
+              {
+                text: "Image",
+                fromSelf: false,
+                type: "image",
+                imageUrl: parsedMessage.data,
+              },
+            ]);
+          } else if (parsedMessage.type === "message") {
+            setMessages((prev) => [
+              ...prev,
+              {
+                text: parsedMessage.data,
+                fromSelf: false,
+                type: "message",
+              },
+            ]);
+          }
+        } catch (e) {
+          // If parsing fails, treat it as a regular text message
+          setMessages((prev) => [
+            ...prev,
+            { text: message, fromSelf: false, type: "message" },
+          ]);
+        }
       },
       onSessionCode: (code) => {
         setCurrentCode(code);
@@ -116,12 +150,53 @@ export function Chat({ sessionCode }: ChatProps) {
 
   const handleSend = () => {
     if (inputMessage.trim() && ws) {
-      ws.send(inputMessage);
+      // Send message in consistent format
+      ws.send(
+        JSON.stringify({
+          type: "message",
+          data: inputMessage.trim(),
+        })
+      );
+
       setMessages((prev) => [
         ...prev,
         { text: inputMessage, fromSelf: true, type: "message" },
       ]);
       setInputMessage("");
+    }
+  };
+
+  const handleImageSelect = async (file: File) => {
+    if (!ws) return;
+
+    try {
+      // Convert image to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+
+        // Send image through WebSocket
+        ws.send(
+          JSON.stringify({
+            type: "image",
+            data: base64String,
+          })
+        );
+
+        // Add to messages
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: "Image",
+            fromSelf: true,
+            type: "image",
+            imageUrl: base64String,
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error processing image:", error);
     }
   };
 
@@ -158,43 +233,65 @@ export function Chat({ sessionCode }: ChatProps) {
                 : "text-left"
             }`}
           >
-            <span
-              className={`inline-block px-3 py-2 rounded-lg ${
-                msg.type === "system"
-                  ? ""
-                  : msg.fromSelf
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              {msg.text}
-            </span>
+            {msg.type === "image" ? (
+              <div
+                className={`inline-block max-w-[200px] ${
+                  msg.fromSelf ? "ml-auto" : "mr-auto"
+                }`}
+              >
+                <img
+                  src={msg.imageUrl}
+                  alt="Shared image"
+                  className="rounded-lg border shadow-sm"
+                />
+              </div>
+            ) : (
+              <span
+                className={`inline-block px-3 py-2 rounded-lg ${
+                  msg.type === "system"
+                    ? ""
+                    : msg.fromSelf
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+              >
+                {msg.text}
+              </span>
+            )}
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Type a message..."
-          className="flex-1 px-4 py-2 border rounded"
-          disabled={status !== "connected"}
-        />
-        <button
-          onClick={handleSend}
-          className={`px-6 py-2 rounded ${
-            status === "connected"
-              ? "bg-blue-500 text-white hover:bg-blue-600"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
-          disabled={status !== "connected"}
-        >
-          Send
-        </button>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Type a message..."
+            className="flex-1 px-4 py-2 border rounded"
+            disabled={status !== "connected"}
+          />
+          <button
+            onClick={handleSend}
+            className={`px-6 py-2 rounded ${
+              status === "connected"
+                ? "bg-blue-500 text-white hover:bg-blue-600"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+            disabled={status !== "connected"}
+          >
+            Send
+          </button>
+        </div>
+        <div className="mt-2">
+          <ImageUpload
+            onImageSelect={handleImageSelect}
+            disabled={status !== "connected"}
+          />
+        </div>
       </div>
     </div>
   );
