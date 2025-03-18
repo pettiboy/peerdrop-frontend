@@ -8,14 +8,17 @@ export interface WebSocketCallbacks {
 }
 
 export class WebSocketService {
-  private baseUrl = "ws://localhost:9081";
+  private baseUrl = import.meta.env.VITE_WS_URL;
   private ws: WebSocket | null = null;
   private sessionCode: string | null = null;
   private callbacks: WebSocketCallbacks = {};
   private isFirstMessage = true;
   private isJoining: boolean;
+  private isClosing = false;
+  private isConnecting = false;
 
   constructor(sessionCode: string | null = null) {
+    console.log("WebSocketService constructor", this.baseUrl);
     this.sessionCode = sessionCode;
     this.isJoining = sessionCode !== null;
   }
@@ -25,19 +28,34 @@ export class WebSocketService {
   }
 
   connect() {
+    // Don't try to connect if we're already connecting or closing
+    if (this.isConnecting || this.isClosing) {
+      return;
+    }
+
+    // Clean up any existing connection first
+    this.cleanup();
+
     const url = this.sessionCode
       ? `${this.baseUrl}/ws/chat/${this.sessionCode}`
       : `${this.baseUrl}/ws/chat`;
 
+    console.log("Connecting to:", url);
+    this.isConnecting = true;
     this.ws = new WebSocket(url);
-    this.isFirstMessage = true;
 
     this.ws.onopen = () => {
-      console.log("Connected to PeerDrop");
+      if (!this.isClosing) {
+        console.log("Connected to PeerDrop");
+        this.isConnecting = false;
+      }
     };
 
     this.ws.onmessage = (event) => {
+      if (this.isClosing) return;
+
       const message = event.data;
+      console.log("Received message:", message);
 
       if (this.isFirstMessage) {
         // First message is always the session code
@@ -62,27 +80,72 @@ export class WebSocketService {
     };
 
     this.ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      this.callbacks.onError?.(error);
+      if (!this.isClosing) {
+        console.error("WebSocket error:", error);
+        this.isConnecting = false;
+        this.callbacks.onError?.(error);
+      }
     };
 
     this.ws.onclose = (event) => {
-      // According to docs, sessions expire on disconnect
-      this.sessionCode = null;
-      this.callbacks.onClose?.(event);
+      if (!this.isClosing) {
+        console.log(
+          "WebSocket closed with code:",
+          event.code,
+          "reason:",
+          event.reason
+        );
+        this.isConnecting = false;
+        // According to docs, sessions expire on disconnect
+        this.sessionCode = null;
+        this.callbacks.onClose?.(event);
+      }
     };
   }
 
+  private cleanup() {
+    if (this.ws) {
+      // Remove all listeners first
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onerror = null;
+      this.ws.onclose = null;
+
+      // Then close the connection
+      if (
+        this.ws.readyState === WebSocket.OPEN ||
+        this.ws.readyState === WebSocket.CONNECTING
+      ) {
+        this.ws.close();
+      }
+      this.ws = null;
+    }
+  }
+
   send(message: string) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (
+      this.ws?.readyState === WebSocket.OPEN &&
+      !this.isClosing &&
+      !this.isConnecting
+    ) {
       this.ws.send(message);
     } else {
-      console.error("WebSocket is not connected");
+      console.error(
+        "WebSocket is not connected. State:",
+        this.ws?.readyState,
+        "Closing:",
+        this.isClosing,
+        "Connecting:",
+        this.isConnecting
+      );
     }
   }
 
   close() {
-    this.ws?.close();
+    console.log("Closing WebSocket connection");
+    this.isClosing = true;
+    this.cleanup();
+    this.isClosing = false;
   }
 
   getSessionCode() {

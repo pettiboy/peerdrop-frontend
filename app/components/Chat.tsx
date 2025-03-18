@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { WebSocketService } from "../services/websocket";
 
 interface ChatProps {
@@ -22,6 +22,7 @@ export function Chat({ sessionCode }: ChatProps) {
     "disconnected" | "connecting" | "connected"
   >("disconnected");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const wsRef = useRef<WebSocketService | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -31,8 +32,15 @@ export function Chat({ sessionCode }: ChatProps) {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
+  const setupWebSocket = useCallback(() => {
+    // Clean up any existing connection
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
     const wsService = new WebSocketService(sessionCode || null);
+    wsRef.current = wsService;
 
     wsService.setCallbacks({
       onPeerJoined: () => {
@@ -93,11 +101,18 @@ export function Chat({ sessionCode }: ChatProps) {
     setStatus("connecting");
     wsService.connect();
     setWs(wsService);
+  }, [sessionCode]);
+
+  useEffect(() => {
+    setupWebSocket();
 
     return () => {
-      wsService.close();
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
     };
-  }, [sessionCode]);
+  }, [setupWebSocket]);
 
   const handleSend = () => {
     if (inputMessage.trim() && ws) {
