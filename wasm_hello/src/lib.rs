@@ -1,32 +1,36 @@
-use wasm_bindgen::prelude::*;
-
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
-use rand::rngs::OsRng;
+use rand_core::OsRng;
+use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub fn greet(name: &str) -> String {
     format!("Hello, {}!", name)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EddsaKeys {
     pub public_key: String,
     pub secret_key: String,
 }
 
-pub fn eddsa_keygen() -> EddsaKeys {
+#[wasm_bindgen]
+pub fn eddsa_keygen() -> JsValue {
     let mut csprng = OsRng;
     let signing_key: SigningKey = SigningKey::generate(&mut csprng);
 
     let ed_public_hex = hex::encode(signing_key.verifying_key().to_bytes());
     let ed_private_hex = hex::encode(signing_key.to_bytes());
 
-    return EddsaKeys {
+    let ed_keys = EddsaKeys {
         public_key: ed_public_hex,
         secret_key: ed_private_hex,
     };
+
+    serde_wasm_bindgen::to_value(&ed_keys).unwrap()
 }
 
+#[wasm_bindgen]
 pub fn eddsa_sign_message(signing_message: &str, secret_key: &str) -> String {
     let message: &[u8] = signing_message.as_bytes();
 
@@ -50,6 +54,7 @@ pub fn eddsa_sign_message(signing_message: &str, secret_key: &str) -> String {
     return signature_hex;
 }
 
+#[wasm_bindgen]
 pub fn eddsa_verify_signature(message: &str, signature: &str, public_key: &str) -> bool {
     // -- message
     let message: &[u8] = message.as_bytes();
@@ -82,19 +87,23 @@ pub fn eddsa_verify_signature(message: &str, signature: &str, public_key: &str) 
 
 #[cfg(test)]
 mod tests {
+    use wasm_bindgen_test::wasm_bindgen_test;
+
     use super::*;
 
     #[test]
     fn test_greet() {
         let result = greet("World");
         println!("{:?}", result);
-        // assert_eq!(result, "Hello, World!");
+        assert_eq!(result, "Hello, World!");
     }
 
-    #[test]
+    #[wasm_bindgen_test]
+    #[allow(dead_code)]
     fn test_eddsa() {
         // generate ed keys
-        let ed_keys = eddsa_keygen();
+        let js_value = eddsa_keygen();
+        let ed_keys: EddsaKeys = serde_wasm_bindgen::from_value(js_value).unwrap();
         println!("ed_keys: {:?}", ed_keys);
 
         // sign message using the keypair
@@ -103,7 +112,9 @@ mod tests {
         println!("signature: {}", signature);
 
         // verify this signature
-        let is_sign_valid = eddsa_verify_signature(msg, signature.as_str(), &ed_keys.public_key);
+        let is_sign_valid = eddsa_verify_signature(msg, &signature, &ed_keys.public_key);
         println!("is valid: {}", is_sign_valid);
+
+        assert!(is_sign_valid, "signature should be valid");
     }
 }
