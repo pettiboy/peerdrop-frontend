@@ -38,13 +38,8 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="App">
-      <h1>{greeting}</h1>
-    </div>
-  );
-
-  return (
     <div className="container mx-auto p-4">
+      <h1>{greeting}</h1>
       <div className="max-w-md mx-auto">
         <h1 className="text-3xl font-bold mb-8 text-center">PeerDrop Chat</h1>
 
