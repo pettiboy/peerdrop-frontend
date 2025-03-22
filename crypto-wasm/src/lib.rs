@@ -3,6 +3,18 @@ use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+use x25519_dalek::{EphemeralSecret, PublicKey};
+
+pub fn ecdh() {
+    let mut csprng = OsRng;
+    let alice_secret = EphemeralSecret::random_from_rng(&mut csprng);
+    let alice_public = PublicKey::from(&alice_secret);
+
+    let apk = hex::encode(alice_public.to_bytes());
+
+    println!("aclice_pk {:?}", apk);
+}
+
 #[wasm_bindgen]
 pub fn greet(name: &str) -> String {
     format!("Hello, {}!", name)
@@ -90,6 +102,11 @@ mod tests {
     use wasm_bindgen_test::wasm_bindgen_test;
 
     use super::*;
+
+    #[test]
+    fn test_ecdh() {
+        ecdh();
+    }
 
     #[test]
     fn test_greet() {
