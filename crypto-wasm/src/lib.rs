@@ -1,17 +1,5 @@
+pub mod ecdh;
 pub mod eddsa;
-
-use rand_core::OsRng;
-use x25519_dalek::{EphemeralSecret, PublicKey};
-
-pub fn ecdh() {
-    let mut csprng = OsRng;
-    let alice_secret = EphemeralSecret::random_from_rng(&mut csprng);
-    let alice_public = PublicKey::from(&alice_secret);
-
-    let apk = hex::encode(alice_public.to_bytes());
-
-    println!("aclice_pk {:?}", apk);
-}
 
 #[cfg(test)]
 mod tests {
@@ -21,7 +9,7 @@ mod tests {
 
     #[test]
     fn test_ecdh() {
-        ecdh();
+        ecdh::keygen::ecdh_keygen();
     }
 
     #[wasm_bindgen_test]

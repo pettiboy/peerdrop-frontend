@@ -9,3 +9,11 @@ wasm-pack build --target web
 ```
 
 3. copy the `pkg` folder to `app/wasm`
+
+## Run tests
+
+1. test
+
+```zsh
+wasm-pack test --node
+```

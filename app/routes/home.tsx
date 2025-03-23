@@ -5,6 +5,7 @@ import init, {
   eddsa_keygen,
   eddsa_sign_message,
   eddsa_verify_signature,
+  ecdh_keygen,
 } from "../wasm/pkg";
 
 export function meta({}: Route.MetaArgs) {
@@ -35,20 +36,27 @@ export default function Home() {
   useEffect(() => {
     init().then(() => {
       // Generate key pair
-      let keys = eddsa_keygen();
-      console.log("eddsa keys", keys);
+      let eddsa_keys = eddsa_keygen();
+      console.log("eddsa edd", eddsa_keys);
 
       let signing_message = "Hello, WebAssembly!";
-      let signature = eddsa_sign_message(signing_message, keys.secret_key);
+      let signature = eddsa_sign_message(
+        signing_message,
+        eddsa_keys.secret_key
+      );
 
       console.log("eddsa signature", signature);
 
       let isValid = eddsa_verify_signature(
         signing_message,
         signature,
-        keys.public_key
+        eddsa_keys.public_key
       );
       console.log("eddsa signature valid", isValid);
+
+      // generate ecdh keys
+      let ecdh_keys = ecdh_keygen();
+      console.log("ecdh keys", ecdh_keys);
     });
   }, []);
 
