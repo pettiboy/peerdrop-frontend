@@ -1,7 +1,11 @@
 import type { Route } from "./+types/home";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import init, { greet } from "../wasm/pkg";
+import init, {
+  eddsa_keygen,
+  eddsa_sign_message,
+  eddsa_verify_signature,
+} from "../wasm/pkg";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -28,18 +32,28 @@ export default function Home() {
     navigate("/chat/new");
   };
 
-  const [greeting, setGreeting] = useState<string>("");
-
   useEffect(() => {
     init().then(() => {
-      const message = greet("Hussain");
-      setGreeting(message);
+      // Generate key pair
+      let keys = eddsa_keygen();
+      console.log("eddsa keys", keys);
+
+      let signing_message = "Hello, WebAssembly!";
+      let signature = eddsa_sign_message(signing_message, keys.secret_key);
+
+      console.log("eddsa signature", signature);
+
+      let isValid = eddsa_verify_signature(
+        signing_message,
+        signature,
+        keys.public_key
+      );
+      console.log("eddsa signature valid", isValid);
     });
   }, []);
 
   return (
     <div className="container mx-auto p-4">
-      <h1>{greeting}</h1>
       <div className="max-w-md mx-auto">
         <h1 className="text-3xl font-bold mb-8 text-center">PeerDrop Chat</h1>
 
