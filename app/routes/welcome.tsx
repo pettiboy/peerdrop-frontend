@@ -6,15 +6,18 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { Shield, MessageCircle } from "lucide-react";
+import { Shield, MessageCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { useUser } from "../hooks/useUser";
 
 export default function WelcomePage() {
   const navigate = useNavigate();
+  const { user, isLoading, error } = useUser();
 
   const handleStartChatting = () => {
-    // TODO: Generate user identity
-    navigate("/chats");
+    if (user) {
+      navigate("/chats");
+    }
   };
 
   return (
@@ -36,13 +39,27 @@ export default function WelcomePage() {
             <Shield className="w-4 h-4" />
             <span>End-to-end encrypted messaging</span>
           </div>
-          <Button
-            className="w-full text-lg py-6"
-            size="lg"
-            onClick={handleStartChatting}
-          >
-            Start Chatting
-          </Button>
+          {error ? (
+            <div className="text-red-500 text-center">
+              Failed to initialize: {error.message}
+            </div>
+          ) : (
+            <Button
+              className="w-full text-lg py-6"
+              size="lg"
+              onClick={handleStartChatting}
+              disabled={isLoading || !user}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Initializing...
+                </>
+              ) : (
+                "Start Chatting"
+              )}
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>
