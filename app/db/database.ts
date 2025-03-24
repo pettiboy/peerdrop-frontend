@@ -1,36 +1,50 @@
 import { createRxDatabase, type RxDatabase, type RxCollection } from "rxdb";
 import { getRxStorageMemory } from "rxdb/plugins/storage-memory";
-import { USER_SCHEMA, type UserDocument } from "./schema";
+import {
+  SELF_IDENTITY_SCHEMA,
+  CONNECTED_USERS_SCHEMA,
+  MESSAGES_SCHEMA,
+  type SelfIdentityDocument,
+  type ConnectedUserDocument,
+  type MessageDocument,
+} from "./schema";
 
-// Define database collections type
-interface DatabaseCollections {
-  users: RxCollection<UserDocument>;
+export interface Collections {
+  selfIdentity: RxCollection<SelfIdentityDocument>;
+  connectedUsers: RxCollection<ConnectedUserDocument>;
+  messages: RxCollection<MessageDocument>;
 }
 
-// Define database type
-export type Database = RxDatabase<DatabaseCollections>;
-
+export type Database = RxDatabase<Collections>;
 let dbPromise: Promise<Database> | null = null;
 
-export const getDatabase = async (): Promise<Database> => {
-  if (dbPromise) return dbPromise;
-
-  dbPromise = createRxDatabase<DatabaseCollections>({
+async function createDb(): Promise<Database> {
+  const db = await createRxDatabase<Collections>({
     name: "peerdropdb",
     storage: getRxStorageMemory(),
-  }).then(async (db) => {
-    // Create collections
-    await db.addCollections({
-      users: {
-        schema: USER_SCHEMA,
-      },
-    });
-
-    return db;
   });
 
+  await db.addCollections({
+    selfIdentity: {
+      schema: SELF_IDENTITY_SCHEMA,
+    },
+    connectedUsers: {
+      schema: CONNECTED_USERS_SCHEMA,
+    },
+    messages: {
+      schema: MESSAGES_SCHEMA,
+    },
+  });
+
+  return db;
+}
+
+export async function getDatabase(): Promise<Database> {
+  if (!dbPromise) {
+    dbPromise = createDb();
+  }
   return dbPromise;
-};
+}
 
 // Helper function to clear database instance (useful for testing/development)
 export const clearDatabase = () => {

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import init from "../wasm/pkg";
-import type { UserDocument } from "../db/schema";
-import { createUserIdentity, getCurrentUser } from "../services/userService";
+import init from "~/wasm/pkg";
+import type { SelfIdentityDocument } from "~/db/schema";
+import { createUserIdentity, getCurrentUser } from "~/db/queries/userIdentity";
 
 export function useUser() {
-  const [user, setUser] = useState<UserDocument | null>(null);
+  const [user, setUser] = useState<SelfIdentityDocument | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -19,7 +19,15 @@ export function useUser() {
 
         if (!currentUser) {
           // Create a new user with a default name (can be updated later)
-          currentUser = await createUserIdentity("Anonymous");
+          currentUser = await createUserIdentity(
+            "Anonymous",
+            "aslfkj",
+            "aslfkj",
+            "aslfkj",
+            "aslfkj",
+            "aslfkj",
+            "aslfkj"
+          );
         }
 
         setUser(currentUser);

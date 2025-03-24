@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Database } from "../db/database";
-import { getDatabase } from "../db/database";
+import { getDatabase, type Database } from "~/db/database";
 
 export function useDatabase() {
   const [db, setDb] = useState<Database | null>(null);
