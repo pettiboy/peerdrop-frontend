@@ -19,7 +19,7 @@ export function useUser() {
     const user = await createUser(ecdhKeys.public_key, eddsaKeys.public_key);
 
     // save user to db
-    await createUserIdentity(
+    const newUser = await createUserIdentity(
       user.name || "Anonymous",
       user.code,
       ecdhKeys.public_key,
@@ -28,6 +28,8 @@ export function useUser() {
       eddsaKeys.secret_key,
       user.created_at
     );
+
+    return newUser;
   }, []);
 
   useEffect(() => {
@@ -44,7 +46,9 @@ export function useUser() {
         console.log("currentUser", currentUser);
 
         if (!currentUser) {
-          await handleCreateUser();
+          const newUser = await handleCreateUser();
+          console.log("after handleCreateUser", newUser);
+          currentUser = newUser;
         }
 
         setUser(currentUser);

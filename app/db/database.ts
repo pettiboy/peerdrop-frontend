@@ -17,8 +17,8 @@ import {
 } from "./schema";
 
 export interface Collections {
-  "self-identity": RxCollection<SelfIdentityDocument>;
-  "connected-users": RxCollection<ConnectedUserDocument>;
+  self_identity: RxCollection<SelfIdentityDocument>;
+  connected_users: RxCollection<ConnectedUserDocument>;
   messages: RxCollection<MessageDocument>;
 }
 
@@ -52,10 +52,10 @@ async function createDb(): Promise<Database> {
   });
 
   await db.addCollections({
-    "self-identity": {
+    self_identity: {
       schema: SELF_IDENTITY_SCHEMA,
     },
-    "connected-users": {
+    connected_users: {
       schema: CONNECTED_USERS_SCHEMA,
     },
     messages: {
