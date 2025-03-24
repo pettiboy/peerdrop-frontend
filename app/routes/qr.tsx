@@ -1,91 +1,71 @@
-import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
+import { getCurrentUser } from "~/db/queries/userIdentity";
+import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
-import { ArrowLeft, QrCode, Shield } from "lucide-react";
-import { useNavigate } from "react-router";
+import { Card } from "~/components/ui/card";
+import { useUser } from "~/hooks/useUser";
 
-export default function QRScanPage() {
-  const navigate = useNavigate();
-  const [manualCode, setManualCode] = useState("");
-  const [isConnecting, setIsConnecting] = useState(false);
+export default function QRPage() {
+  const { user } = useUser();
 
-  const handleConnect = async () => {
-    setIsConnecting(true);
-    // TODO: Implement actual connection logic
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    navigate("/chat/new");
-  };
-
-  if (isConnecting) {
+  if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>Establishing Connection</CardTitle>
-            <CardDescription>Creating a secure channel...</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Shield className="w-4 h-4" />
-              <span>End-to-end encrypted</span>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold">Loading...</h2>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="border-b px-4 py-3 flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <h1 className="text-xl font-semibold">Connect with Contact</h1>
-      </header>
-
-      <div className="flex-1 p-4 flex flex-col items-center">
-        {/* QR Scanner Placeholder */}
-        <div className="w-full max-w-md aspect-square bg-muted rounded-lg mb-8 flex items-center justify-center">
-          <QrCode className="w-16 h-16 text-muted-foreground" />
-          {/* TODO: Implement actual QR scanner */}
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md p-6 space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold">Your QR Code</h1>
+          <p className="text-muted-foreground">
+            Share this code to connect with others
+          </p>
         </div>
 
-        {/* Manual Code Entry */}
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Enter Code Manually</CardTitle>
-            <CardDescription>
-              Ask your contact to share their user code
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Input
-              placeholder="Enter user code"
-              value={manualCode}
-              onChange={(e) => setManualCode(e.target.value)}
+        <div className="flex flex-col items-center space-y-4">
+          {/* QR Code */}
+          <div className="bg-white p-4 rounded-lg shadow-inner">
+            <QRCodeSVG
+              value={user.userCode}
+              size={200}
+              level="H"
+              includeMargin={true}
+              className="mx-auto"
             />
-            <Button
-              className="w-full"
-              disabled={!manualCode}
-              onClick={handleConnect}
-            >
-              Continue
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+
+          {/* User Code Display */}
+          <div className="text-center space-y-2">
+            <p className="text-sm text-muted-foreground">Your Code</p>
+            <div className="flex items-center justify-center space-x-2">
+              <code className="bg-muted px-4 py-2 rounded-md text-xl font-mono">
+                {user.userCode}
+              </code>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(user.userCode);
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            Connected as <span className="font-medium">{user.name}</span>
+          </p>
+        </div>
+      </Card>
     </div>
   );
 }
