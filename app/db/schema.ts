@@ -56,26 +56,32 @@ const selfIdentitySchemaLiteral = {
     ecdhSecretKey: {
       type: "string",
       description: "ECDH secret key for key derivation",
+      maxLength: 64,
     },
     ecdhPublicKey: {
       type: "string",
       description: "ECDH public key shared with others",
+      maxLength: 64,
     },
     eddsaSecretKey: {
       type: "string",
       description: "EdDSA secret key for signing",
+      maxLength: 64,
     },
     eddsaPublicKey: {
       type: "string",
       description: "EdDSA public key for verification",
+      maxLength: 64,
     },
     userCode: {
       type: "string",
       description: "Unique code from server",
+      maxLength: 255,
     },
     name: {
       type: "string",
       description: "User's name",
+      maxLength: 255,
     },
     createdAt: {
       type: "string",
@@ -91,7 +97,6 @@ const selfIdentitySchemaLiteral = {
     "eddsaPublicKey",
     "userCode",
     "name",
-    "createdAt",
   ],
 } as const;
 
@@ -107,16 +112,18 @@ const connectedUsersSchemaLiteral = {
   properties: {
     userCode: {
       type: "string",
-      maxLength: 100,
       description: "Unique identifier of the connected user",
+      maxLength: 255,
     },
     ecdhPublicKey: {
       type: "string",
       description: "ECDH public key for key derivation",
+      maxLength: 64,
     },
     eddsaPublicKey: {
       type: "string",
       description: "EdDSA public key for signature verification",
+      maxLength: 64,
     },
     symmetricKey: {
       type: "string",
@@ -125,6 +132,7 @@ const connectedUsersSchemaLiteral = {
     name: {
       type: "string",
       description: "Connected user's name (optional)",
+      maxLength: 255,
     },
     createdAt: {
       type: "string",
@@ -132,14 +140,7 @@ const connectedUsersSchemaLiteral = {
       description: "Timestamp of connection",
     },
   },
-  required: [
-    "userCode",
-    "ecdhPublicKey",
-    "eddsaPublicKey",
-    "symmetricKey",
-    "createdAt",
-  ],
-  indexes: ["createdAt"],
+  required: ["userCode", "ecdhPublicKey", "eddsaPublicKey", "createdAt"],
 } as const;
 
 /**
@@ -160,10 +161,12 @@ const messagesSchemaLiteral = {
     conversationId: {
       type: "string",
       description: "User code of the connected user (conversation identifier)",
+      maxLength: 255,
     },
     senderUserCode: {
       type: "string",
       description: "User code of the sender",
+      maxLength: 255,
     },
     content: {
       type: "string",
@@ -176,7 +179,7 @@ const messagesSchemaLiteral = {
     },
   },
   required: ["id", "conversationId", "senderUserCode", "content", "timestamp"],
-  indexes: ["conversationId", "timestamp"],
+  indexes: ["conversationId"],
 } as const;
 
 // Create typed schemas

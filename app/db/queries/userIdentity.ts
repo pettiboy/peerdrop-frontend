@@ -16,7 +16,7 @@ export async function createUserIdentity(
   const db = await getDatabase();
   const now = new Date(createdAt).toISOString();
 
-  const user = await db.selfIdentity.insert({
+  const user = await db["self-identity"].insert({
     id: "self",
     name,
     userCode,
@@ -35,7 +35,7 @@ export async function createUserIdentity(
  */
 export async function getCurrentUser(): Promise<SelfIdentityDocument | null> {
   const db = await getDatabase();
-  return await db.selfIdentity.findOne("self").exec();
+  return await db["self-identity"].findOne("self").exec();
 }
 
 /**
@@ -45,7 +45,7 @@ export async function updateUserName(
   name: string
 ): Promise<SelfIdentityDocument> {
   const db = await getDatabase();
-  const user = await db.selfIdentity.findOne("self").exec();
+  const user = await db["self-identity"].findOne("self").exec();
 
   if (!user) {
     throw new Error("User not found");

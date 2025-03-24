@@ -14,7 +14,7 @@ export async function addConnectedUser(
   const db = await getDatabase();
 
   const now = new Date().toISOString();
-  const connectedUser = await db.connectedUsers.insert({
+  const connectedUser = await db["connected-users"].insert({
     userCode,
     ecdhPublicKey,
     eddsaPublicKey,
@@ -33,7 +33,7 @@ export async function getConnectedUser(
   userCode: string
 ): Promise<ConnectedUserDocument | null> {
   const db = await getDatabase();
-  return await db.connectedUsers.findOne(userCode).exec();
+  return await db["connected-users"].findOne(userCode).exec();
 }
 
 /**
@@ -41,7 +41,7 @@ export async function getConnectedUser(
  */
 export async function getConnectedUsers(): Promise<ConnectedUserDocument[]> {
   const db = await getDatabase();
-  return await db.connectedUsers.find().exec();
+  return await db["connected-users"].find().exec();
 }
 
 /**
@@ -49,7 +49,7 @@ export async function getConnectedUsers(): Promise<ConnectedUserDocument[]> {
  */
 export async function removeConnectedUser(userCode: string): Promise<void> {
   const db = await getDatabase();
-  const user = await db.connectedUsers.findOne(userCode).exec();
+  const user = await db["connected-users"].findOne(userCode).exec();
 
   if (user) {
     await user.remove();
